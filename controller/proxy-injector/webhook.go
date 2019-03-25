@@ -104,23 +104,26 @@ func (w *Webhook) inject(request *admissionv1beta1.AdmissionRequest) (*admission
 	nsAnnotations := namespace.GetAnnotations()
 
 	configs := &pb.All{Global: globalConfig, Proxy: proxyConfig}
-	conf := inject.NewResourceConfig(configs).
+	resourceConfig := inject.NewResourceConfig(configs).
 		WithNsAnnotations(nsAnnotations).
 		WithKind(request.Kind.Kind)
-	nonEmpty, err := conf.ParseMeta(request.Object.Raw)
+	report, err := resourceConfig.ParseMetaAndYAML(request.Object.Raw)
 	if err != nil {
 		return nil, err
 	}
+	log.Infof("received %s ", report.ResName())
 
 	admissionResponse := &admissionv1beta1.AdmissionResponse{
 		UID:     request.UID,
 		Allowed: true,
 	}
-	if !nonEmpty {
+
+	if !report.Injectable() {
+		log.Infof("skipped %s ", report.ResName())
 		return admissionResponse, nil
 	}
 
-	p, _, err := conf.GetPatch(request.Object.Raw, inject.ShouldInjectWebhook)
+	p, err := resourceConfig.GetPatch(request.Object.Raw)
 	if err != nil {
 		return nil, err
 	}
@@ -135,13 +138,13 @@ func (w *Webhook) inject(request *admissionv1beta1.AdmissionRequest) (*admission
 	// automatically copied to the workload's main metadata section.
 	// This doesn't happen when adding labels through the webhook. So we manually
 	// add them to remain consistent.
-	conf.AddRootLabels(p)
+	resourceConfig.AddRootLabels(p)
 
 	patchJSON, err := p.Marshal()
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("patch generated for: %s", conf)
+	log.Infof("patch generated for: %s", resourceConfig)
 	log.Debugf("patch: %s", patchJSON)
 
 	patchType := admissionv1beta1.PatchTypeJSONPatch
