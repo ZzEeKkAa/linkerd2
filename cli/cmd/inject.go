@@ -278,7 +278,15 @@ func (options *injectOptions) fetchConfigsOrDefault() (*config.All, error) {
 }
 
 // overrideConfigs uses command-line overrides to update the provided configs
-func (options *injectOptions) overrideConfigs(configs *config.All) {
+func (options *proxyConfigOptions) overrideConfigs(configs *config.All) {
+	if options.linkerdVersion != "" {
+		configs.Global.Version = options.linkerdVersion
+	}
+
+	if len(options.ignoreInboundPorts) > 0 {
+		configs.Proxy.IgnoreInboundPorts = toPorts(options.ignoreInboundPorts)
+	}
+
 	if len(options.ignoreInboundPorts) > 0 {
 		configs.Proxy.IgnoreInboundPorts = toPorts(options.ignoreInboundPorts)
 	}

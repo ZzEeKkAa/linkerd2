@@ -110,6 +110,7 @@ func init() {
 	RootCmd.AddCommand(newCmdTap())
 	RootCmd.AddCommand(newCmdTop())
 	RootCmd.AddCommand(newCmdUninject())
+	RootCmd.AddCommand(newCmdUpgrade())
 	RootCmd.AddCommand(newCmdVersion())
 }
 

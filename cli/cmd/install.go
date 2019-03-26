@@ -166,11 +166,15 @@ func newInstallOptionsWithDefaults() *installOptions {
 			disableExternalProfiles: false,
 			noInitContainer:         false,
 		},
-		identityOptions: &installIdentityOptions{
-			trustDomain:        defaultIdentityTrustDomain,
-			issuanceLifetime:   defaultIdentityIssuanceLifetime,
-			clockSkewAllowance: defaultIdentityClockSkewAllowance,
-		},
+		identityOptions: newInstallIdentityOptionsWithDefaults(),
+	}
+}
+
+func newInstallIdentityOptionsWithDefaults() *installIdentityOptions {
+	return &installIdentityOptions{
+		trustDomain:        defaultIdentityTrustDomain,
+		issuanceLifetime:   defaultIdentityIssuanceLifetime,
+		clockSkewAllowance: defaultIdentityClockSkewAllowance,
 	}
 }
 
@@ -186,10 +190,14 @@ func newCmdInstall() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return render(values, os.Stdout, configs)
+			return values.render(os.Stdout, configs)
 		},
 	}
 
+	return options.configure(cmd)
+}
+
+func (options *installOptions) configure(cmd *cobra.Command) *cobra.Command {
 	addProxyConfigFlags(cmd, options.proxyConfigOptions)
 	cmd.PersistentFlags().UintVar(
 		&options.controllerReplicas, "controller-replicas", options.controllerReplicas,
@@ -239,7 +247,6 @@ func newCmdInstall() *cobra.Command {
 		&options.identityOptions.issuanceLifetime, "identity-issuance-lifetime", options.identityOptions.issuanceLifetime,
 		"The amount of time for which the Identity issuer should certify identity",
 	)
-
 	return cmd
 }
 
@@ -357,7 +364,7 @@ func toPromLogLevel(level string) string {
 	}
 }
 
-func render(values *installValues, w io.Writer, configs *pb.All) error {
+func (values *installValues) render(w io.Writer, configs *pb.All) error {
 	// Render raw values and create chart config
 	rawValues, err := yaml.Marshal(values)
 	if err != nil {

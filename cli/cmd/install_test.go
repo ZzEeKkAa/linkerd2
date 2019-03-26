@@ -86,7 +86,7 @@ func TestRender(t *testing.T) {
 			controlPlaneNamespace = tc.configs.GetGlobal().GetLinkerdNamespace()
 
 			var buf bytes.Buffer
-			if err := render(tc.values, &buf, tc.configs); err != nil {
+			if err := tc.values.render(&buf, tc.configs); err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
 			diffTestdata(t, tc.goldenFileName, buf.String())
